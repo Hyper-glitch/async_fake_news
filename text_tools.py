@@ -32,7 +32,11 @@ def calculate_jaundice_rate(article_words, charged_words):
     return round(score, 2)
 
 
-async def read_charged_words(positive_words_path, negative_words_path):
+async def read_charged_words():
+    charged_vocabulary = 'charged_dict'
+    positive_words_path = f'{charged_vocabulary}/positive_words.txt'
+    negative_words_path = f'{charged_vocabulary}/negative_words.txt'
+
     charged_words = []
 
     async with aiofiles.open(positive_words_path, mode='r') as positive,\
