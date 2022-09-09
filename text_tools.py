@@ -1,5 +1,7 @@
 import string
 
+import aiofiles
+
 
 def _clean_word(word):
     word = word.replace('«', '').replace('»', '').replace('…', '')
@@ -30,12 +32,13 @@ def calculate_jaundice_rate(article_words, charged_words):
     return round(score, 2)
 
 
-def read_charged_words(positive_words_path, negative_words_path):
+async def read_charged_words(positive_words_path, negative_words_path):
     charged_words = []
 
-    with open(positive_words_path) as positive, open(negative_words_path) as negative:
-        positive_lines = positive.readlines()
-        negative_lines = negative.readlines()
+    async with aiofiles.open(positive_words_path, mode='r') as positive,\
+            aiofiles.open(negative_words_path, mode='r') as negative:
+        positive_lines = await positive.readlines()
+        negative_lines = await negative.readlines()
 
     for line in positive_lines:
         charged_words.append(line.rstrip('\n'))

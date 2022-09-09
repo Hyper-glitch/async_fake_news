@@ -22,7 +22,7 @@ async def main():
     charged_vocabulary = 'charged_dict'
     word_paths = [f'{charged_vocabulary}/positive_words.txt', f'{charged_vocabulary}/negative_words.txt']
 
-    charged_words = read_charged_words(*word_paths)
+    charged_words = await read_charged_words(*word_paths)
 
     article_words = split_by_words(morph, sanitized_text)
 
