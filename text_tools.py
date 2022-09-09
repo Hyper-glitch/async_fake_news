@@ -1,4 +1,7 @@
+import logging
 import string
+import time
+from contextlib import contextmanager
 
 import aiofiles
 
@@ -10,14 +13,25 @@ def _clean_word(word):
     return word
 
 
+@contextmanager
+def count_runtime(*args, **kwds):
+    start = time.monotonic()
+    article_words = split_by_words(*args, **kwds)
+    end = time.monotonic()
+    logging.info(f'Анализ закончен за {end - start} сек')
+    yield article_words
+
+
 def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
     words = []
+
     for word in text.split():
         cleaned_word = _clean_word(word)
         normalized_word = morph.parse(cleaned_word)[0].normal_form
         if len(normalized_word) > 2 or normalized_word == 'не':
             words.append(normalized_word)
+
     return words
 
 
@@ -40,7 +54,7 @@ async def read_charged_words():
     charged_words = []
     diry_lines = []
 
-    async with aiofiles.open(positive_words_path, mode='r') as positive,\
+    async with aiofiles.open(positive_words_path, mode='r') as positive, \
             aiofiles.open(negative_words_path, mode='r') as negative:
         positive_lines = await positive.readlines()
         negative_lines = await negative.readlines()
