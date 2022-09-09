@@ -6,6 +6,7 @@ from anyio import create_task_group, TASK_STATUS_IGNORED
 from anyio.abc import TaskStatus
 
 import adapters
+from adapters import ArticleNotFound
 from enums import ProcessingStatus
 from text_tools import calculate_jaundice_rate, split_by_words, read_charged_words
 
@@ -36,10 +37,14 @@ async def process_article(
         status = ProcessingStatus.FETCH_ERROR.value
     else:
         status = ProcessingStatus.OK.value
-        sanitized_text = adapters.SANITIZERS['inosmi_ru'](html, plaintext=True)
-        article_words = split_by_words(morph, sanitized_text)
-        words_count = len(article_words)
-        score = calculate_jaundice_rate(article_words, charged_words)
+        try:
+            sanitized_text = adapters.SANITIZERS['inosmi_ru'](html, plaintext=True)
+        except ArticleNotFound:
+            status = ProcessingStatus.PARSING_ERROR.value
+        else:
+            article_words = split_by_words(morph, sanitized_text)
+            words_count = len(article_words)
+            score = calculate_jaundice_rate(article_words, charged_words)
 
     results_queue.put_nowait({
         'URL': url,
@@ -56,7 +61,7 @@ async def main():
 
     test_articles = [
         'https://inosmi.ru/20220908/polonez-255973070.html',
-        'https://inosmi.ru/20220909/evrei-2560061.html',
+        'https://lenta.ru/brief/2021/08/26/afg_terror/',
         'https://inosmi.ru/20220909/ukraina-256005416.html',
         'https://inosmi.ru/20220909/evro-25600579.html',
         'https://inosmi.ru/20220909/korolevstvo-256004302.html',
