@@ -52,12 +52,14 @@ async def process_article(
             words_count = len(article_words)
             score = calculate_jaundice_rate(article_words, charged_words)
 
-    results_queue.put_nowait({
-        'URL': url,
-        'http_status': status,
-        'score': score,
-        'words_count': words_count,
-    })
+    results_queue.put_nowait(
+        {
+            'URL': url,
+            'http_status': status,
+            'score': score,
+            'words_count': words_count,
+        }
+    )
 
 
 async def main():
@@ -72,6 +74,7 @@ async def main():
         'https://inosmi.ru/20220909/evro-25600579.html',
         'https://inosmi.ru/20220909/korolevstvo-256004302.html',
     ]
+
     async with aiohttp.ClientSession() as session:
         async with create_task_group() as tg:
             for url in test_articles:
