@@ -1,13 +1,16 @@
 import asyncio
+from datetime import datetime
 
 import aiohttp
 import pymorphy2
 from anyio import create_task_group, TASK_STATUS_IGNORED
 from anyio.abc import TaskStatus
+from async_timeout import timeout
 
 import adapters
 from adapters import ArticleNotFound
 from enums import ProcessingStatus
+from settings import TIMEOUT_FETCH_EXPIRED_SEC
 from text_tools import calculate_jaundice_rate, split_by_words, read_charged_words
 
 
@@ -32,9 +35,12 @@ async def process_article(
     words_count = None
 
     try:
-        html = await fetch(session, url)
+        async with timeout(TIMEOUT_FETCH_EXPIRED_SEC):
+            html = await fetch(session, url)
     except aiohttp.ClientResponseError:
         status = ProcessingStatus.FETCH_ERROR.value
+    except asyncio.TimeoutError:
+        status = ProcessingStatus.TIMEOUT.value
     else:
         status = ProcessingStatus.OK.value
         try:
@@ -73,4 +79,6 @@ async def main():
                 tg.start_soon(get_results, results_queue)
 
 
+print(datetime.now())
 asyncio.run(main())
+print(datetime.now())
