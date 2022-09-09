@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+import logging
 
 import aiohttp
 import pymorphy2
@@ -7,11 +7,10 @@ from anyio import create_task_group, TASK_STATUS_IGNORED
 from anyio.abc import TaskStatus
 from async_timeout import timeout
 
-import adapters
 from adapters import ArticleNotFound
 from enums import ProcessingStatus
 from settings import TIMEOUT_FETCH_EXPIRED_SEC
-from text_tools import calculate_jaundice_rate, split_by_words, read_charged_words
+from text_tools import calculate_jaundice_rate, read_charged_words, count_runtime
 
 
 async def fetch(session, url):
@@ -44,13 +43,14 @@ async def process_article(
     else:
         status = ProcessingStatus.OK.value
         try:
-            sanitized_text = adapters.SANITIZERS['inosmi_ru'](html, plaintext=True)
+            ''
+            # sanitized_text = adapters.SANITIZERS['inosmi_ru'](html, plaintext=True)
         except ArticleNotFound:
             status = ProcessingStatus.PARSING_ERROR.value
         else:
-            article_words = split_by_words(morph, sanitized_text)
-            words_count = len(article_words)
-            score = calculate_jaundice_rate(article_words, charged_words)
+            with count_runtime(morph, html) as article_words:
+                words_count = len(article_words)
+                score = calculate_jaundice_rate(article_words, charged_words)
 
     results_queue.put_nowait(
         {
@@ -63,17 +63,20 @@ async def process_article(
 
 
 async def main():
+    logging.basicConfig(level=logging.DEBUG)
     charged_words = await read_charged_words()
     results_queue = asyncio.Queue()
     morph = pymorphy2.MorphAnalyzer()
 
+    # test_articles = [
+    #     'https://inosmi.ru/20220908/polonez-255973070.html',
+    #     'https://lenta.ru/brief/2021/08/26/afg_terror/',
+    #     'https://inosmi.ru/20220909/ukraina-256005416.html',
+    #     'https://inosmi.ru/20220909/evro-25600579.html',
+    #     'https://inosmi.ru/20220909/korolevstvo-256004302.html',
+    # ]
     test_articles = [
-        'https://inosmi.ru/20220908/polonez-255973070.html',
-        'https://lenta.ru/brief/2021/08/26/afg_terror/',
-        'https://inosmi.ru/20220909/ukraina-256005416.html',
-        'https://inosmi.ru/20220909/evro-25600579.html',
-        'https://inosmi.ru/20220909/korolevstvo-256004302.html',
-    ]
+        'https://dvmn.org/media/filer_public/51/83/51830f54-7ec7-4702-847b-c5790ed3724c/gogol_nikolay_taras_bulba_-_bookscafenet.txt']
 
     async with aiohttp.ClientSession() as session:
         async with create_task_group() as tg:
@@ -82,6 +85,5 @@ async def main():
                 tg.start_soon(get_results, results_queue)
 
 
-print(datetime.now())
-asyncio.run(main())
-print(datetime.now())
+if __name__ == '__main__':
+    asyncio.run(main())
