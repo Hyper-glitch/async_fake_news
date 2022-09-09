@@ -38,16 +38,16 @@ async def read_charged_words():
     negative_words_path = f'{charged_vocabulary}/negative_words.txt'
 
     charged_words = []
+    diry_lines = []
 
     async with aiofiles.open(positive_words_path, mode='r') as positive,\
             aiofiles.open(negative_words_path, mode='r') as negative:
         positive_lines = await positive.readlines()
         negative_lines = await negative.readlines()
 
-    for line in positive_lines:
-        charged_words.append(line.rstrip('\n'))
+    diry_lines.extend(positive_lines + negative_lines)
 
-    for line in negative_lines:
+    for line in diry_lines:
         charged_words.append(line.rstrip('\n'))
 
     return charged_words
