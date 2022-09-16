@@ -14,9 +14,9 @@ def _clean_word(word):
 
 
 @contextmanager
-def count_runtime(*args, **kwds):
+def count_runtime(*args, **kwargs):
     start = time.monotonic()
-    article_words = split_by_words(*args, **kwds)
+    article_words = split_by_words(*args, **kwargs)
     end = time.monotonic()
     logging.info(f'Анализ закончен за {end - start} сек')
     yield article_words
