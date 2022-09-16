@@ -62,7 +62,6 @@ async def process_article(
 
 
 async def main():
-    logging.basicConfig(level=logging.DEBUG)
     charged_words = await read_charged_words()
     results_queue = asyncio.Queue()
     morph = pymorphy2.MorphAnalyzer()
@@ -83,4 +82,6 @@ async def main():
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('pymorphy2.opencorpora_dict.wrapper').setLevel(logging.WARNING)
     asyncio.run(main())
