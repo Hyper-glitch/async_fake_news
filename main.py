@@ -7,10 +7,9 @@ from anyio import create_task_group, TASK_STATUS_IGNORED
 from anyio.abc import TaskStatus
 from async_timeout import timeout
 
-from adapters import ArticleNotFound, SANITIZERS
+from adapters import ArticleNotFound
 from enums import ProcessingStatus
-from settings import TIMEOUT_FETCH_EXPIRED_SEC
-from text_tools import calculate_jaundice_rate, read_charged_words, count_runtime
+from text_tools import calculate_jaundice_rate, read_charged_words, split_by_words
 
 
 async def fetch(session, url):
@@ -34,7 +33,7 @@ async def process_article(
     words_count = None
 
     try:
-        async with timeout(TIMEOUT_FETCH_EXPIRED_SEC):
+        async with timeout(4):
             html = await fetch(session, url)
     except aiohttp.ClientResponseError:
         status = ProcessingStatus.FETCH_ERROR.value
@@ -42,14 +41,19 @@ async def process_article(
         status = ProcessingStatus.TIMEOUT.value
     else:
         try:
-            sanitized_text = SANITIZERS['inosmi_ru'](html, plaintext=True)
+            ''
+            # sanitized_text = SANITIZERS['inosmi_ru'](html, plaintext=True)
         except ArticleNotFound:
             status = ProcessingStatus.PARSING_ERROR.value
         else:
-            status = ProcessingStatus.OK.value
-            with count_runtime(morph, sanitized_text) as article_words:
+            try:
+                article_words = split_by_words(morph, html)
+            except TimeoutError:
+                status = ProcessingStatus.TIMEOUT.value
+            else:
                 words_count = len(article_words)
                 score = calculate_jaundice_rate(article_words, charged_words)
+                status = ProcessingStatus.OK.value
 
     results_queue.put_nowait(
         {
@@ -66,13 +70,15 @@ async def main():
     results_queue = asyncio.Queue()
     morph = pymorphy2.MorphAnalyzer()
 
+    # test_articles = [
+    #     'https://inosmi.ru/20220908/polonez-255973070.html',
+    #     'https://lenta.ru/brief/2021/08/26/afg_terror/',
+    #     'https://inosmi.ru/20220909/ukraina-256005416.html',
+    #     'https://inosmi.ru/20220909/evro-25600579.html',
+    #     'https://inosmi.ru/20220909/korolevstvo-256004302.html',
+    # ]
     test_articles = [
-        'https://inosmi.ru/20220908/polonez-255973070.html',
-        'https://lenta.ru/brief/2021/08/26/afg_terror/',
-        'https://inosmi.ru/20220909/ukraina-256005416.html',
-        'https://inosmi.ru/20220909/evro-25600579.html',
-        'https://inosmi.ru/20220909/korolevstvo-256004302.html',
-    ]
+        'https://dvmn.org/media/filer_public/51/83/51830f54-7ec7-4702-847b-c5790ed3724c/gogol_nikolay_taras_bulba_-_bookscafenet.txt']
 
     async with aiohttp.ClientSession() as session:
         async with create_task_group() as tg:

@@ -1,9 +1,10 @@
 import logging
 import string
 import time
-from contextlib import contextmanager
 
 import aiofiles
+
+from settings import MIN_RUNTIME_SEC
 
 
 def _clean_word(word):
@@ -13,17 +14,9 @@ def _clean_word(word):
     return word
 
 
-@contextmanager
-def count_runtime(*args, **kwargs):
-    start = time.monotonic()
-    article_words = split_by_words(*args, **kwargs)
-    end = time.monotonic()
-    logging.info(f'Анализ закончен за {end - start} сек')
-    yield article_words
-
-
 def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
+    start = time.monotonic()
     words = []
 
     for word in text.split():
@@ -31,6 +24,14 @@ def split_by_words(morph, text):
         normalized_word = morph.parse(cleaned_word)[0].normal_form
         if len(normalized_word) > 2 or normalized_word == 'не':
             words.append(normalized_word)
+
+        end = time.monotonic()
+        if end - start > MIN_RUNTIME_SEC:
+            logging.info(f'Анализ закончен за {end - start} сек')
+            raise TimeoutError
+    else:
+        end = time.monotonic()
+        logging.info(f'Анализ закончен за {end - start} сек')
 
     return words
 
