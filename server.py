@@ -62,17 +62,21 @@ async def process_article(
 
 
 async def handle_articles_query(request):
-    query = dict(request.query)
+    query = request.query.get('urls')
     analyzed_results = []
 
     if query:
-        query['urls'] = query['urls'].split(',')
-        charged_words = await read_charged_words()
-        morph = pymorphy2.MorphAnalyzer()
+        splitted_urls = query.split(',')
+        ddos_condition = len(splitted_urls) > 50
+        if not ddos_condition:
+            charged_words = await read_charged_words()
+            morph = pymorphy2.MorphAnalyzer()
 
-        async with aiohttp.ClientSession() as session:
-            async with create_task_group() as tg:
-                for url in query['urls']:
-                    tg.start_soon(process_article, session, morph, charged_words, url, analyzed_results)
+            async with aiohttp.ClientSession() as session:
+                async with create_task_group() as tg:
+                    for url in splitted_urls:
+                        tg.start_soon(process_article, session, morph, charged_words, url, analyzed_results)
+        else:
+            return web.json_response({"error": "too many urls in request, should be 10 or less"}, status=400)
 
     return web.json_response(analyzed_results)

@@ -14,7 +14,7 @@ def set_up_logger():
 def run_server():
     app = web.Application()
     app.add_routes([web.get('/', handle_articles_query)])
-    web.run_app(app, port=7777)
+    web.run_app(app)
 
 
 if __name__ == '__main__':
