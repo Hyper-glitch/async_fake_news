@@ -22,16 +22,18 @@ pip install -r requirements.txt
 python main.py
 ```
 
+# Как использовать
+
+```
+http://0.0.0.0:8080?urls=http://inosmi.ru/economic/20190629/245384784.html, ...
+```
+
 # Как запустить тесты
 
 Для тестирования используется [pytest](https://docs.pytest.org/en/latest/), тестами покрыты фрагменты кода сложные в отладке: text_tools.py и адаптеры. Команды для запуска тестов:
 
 ```
-python -m pytest adapters/inosmi_ru.py
-```
-
-```
-python -m pytest text_tools.py
+python -m pytest test/conftest.py
 ```
 
 # Цели проекта
