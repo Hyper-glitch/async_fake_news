@@ -10,3 +10,6 @@ DAWG-Python==0.7.*
 aiofiles==0.8.*
 anyio==3.6.*
 async-timeout==4.0.*
+pytest-aiohttp==1.0.*
+flake8==6.0.0
+black==22.12.0

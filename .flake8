@@ -1,0 +1,5 @@
+[flake8]
+exclude = .git,__pycache__,venv,dist,build,migrations
+max-line-length = 120
+; W503 is disabled due to black formatter style
+ignore = E122,E402,W503
