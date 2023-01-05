@@ -11,7 +11,7 @@ from async_timeout import timeout
 import adapters
 from adapters import ArticleNotFound
 from enums import ProcessingStatus
-from settings import TIMEOUT_FETCH_EXPIRED_SEC
+from settings import TIMEOUT_FETCH_EXPIRED_SEC, MAX_URLS_AMOUNT
 from text_tools import calculate_jaundice_rate, read_charged_words, split_by_words
 
 
@@ -22,7 +22,12 @@ async def fetch(session, url):
 
 
 async def process_article(
-        session, morph, charged_words, url, analyzed_results, task_status: TaskStatus = TASK_STATUS_IGNORED,
+    session,
+    morph,
+    charged_words,
+    url,
+    analyzed_results,
+    task_status: TaskStatus = TASK_STATUS_IGNORED,
 ):
     task_status.started()
 
@@ -38,7 +43,7 @@ async def process_article(
         status = ProcessingStatus.TIMEOUT.value
     else:
         try:
-            sanitized_text = adapters.SANITIZERS['inosmi_ru'](html, plaintext=True)
+            sanitized_text = adapters.SANITIZERS["inosmi_ru"](html, plaintext=True)
         except ArticleNotFound:
             status = ProcessingStatus.PARSING_ERROR.value
         else:
@@ -53,21 +58,21 @@ async def process_article(
 
     analyzed_results.append(
         {
-            'URL': url,
-            'http_status': status,
-            'score': score,
-            'words_count': words_count,
+            "URL": url,
+            "http_status": status,
+            "score": score,
+            "words_count": words_count,
         }
     )
 
 
 async def handle_articles_query(request):
-    query = request.query.get('urls')
+    query = request.query.get("urls")
     analyzed_results = []
 
     if query:
-        splitted_urls = query.split(',')
-        ddos_condition = len(splitted_urls) > 50
+        splitted_urls = query.split(",")
+        ddos_condition = len(splitted_urls) > MAX_URLS_AMOUNT
         if not ddos_condition:
             charged_words = await read_charged_words()
             morph = pymorphy2.MorphAnalyzer()
@@ -75,8 +80,17 @@ async def handle_articles_query(request):
             async with aiohttp.ClientSession() as session:
                 async with create_task_group() as tg:
                     for url in splitted_urls:
-                        tg.start_soon(process_article, session, morph, charged_words, url, analyzed_results)
+                        tg.start_soon(
+                            process_article,
+                            session,
+                            morph,
+                            charged_words,
+                            url,
+                            analyzed_results,
+                        )
         else:
-            return web.json_response({"error": "too many urls in request, should be 10 or less"}, status=400)
+            return web.json_response(
+                {"error": "too many urls in request, should be 10 or less"}, status=400
+            )
 
     return web.json_response(analyzed_results)
