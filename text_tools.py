@@ -10,16 +10,12 @@ def _clean_word(word):
     return word
 
 
-async def split_by_words(morph, text):
+async def split_by_words(morph, word):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
-    words = []
-    for word in text.split():
-        cleaned_word = _clean_word(word)
-        normalized_word = morph.parse(cleaned_word)[0].normal_form
-        if len(normalized_word) > 2 or normalized_word == "не":
-            words.append(normalized_word)
-    return words
-
+    cleaned_word = _clean_word(word)
+    normalized_word = morph.parse(cleaned_word)[0].normal_form
+    if len(normalized_word) > 2 or normalized_word == "не":
+        yield word
 
 def calculate_jaundice_rate(article_words, charged_words):
     """Расчитывает желтушность текста, принимает список "заряженных" слов и ищет их внутри article_words."""
