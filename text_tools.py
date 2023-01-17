@@ -1,10 +1,6 @@
-import logging
 import string
-import time
 
 import aiofiles
-
-from settings import MIN_RUNTIME_SEC
 
 
 def _clean_word(word):
