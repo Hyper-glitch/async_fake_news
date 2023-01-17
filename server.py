@@ -1,5 +1,7 @@
 """Module for all server logic."""
 import asyncio
+import logging
+import time
 
 import aiohttp
 import pymorphy2
@@ -11,7 +13,7 @@ from async_timeout import timeout
 import adapters
 from adapters import ArticleNotFound
 from enums import ProcessingStatus
-from settings import TIMEOUT_FETCH_EXPIRED_SEC, MAX_URLS_AMOUNT
+from settings import TIMEOUT_FETCH_EXPIRED_SEC, MAX_URLS_AMOUNT, MIN_RUNTIME_SEC
 from text_tools import calculate_jaundice_rate, read_charged_words, split_by_words
 
 
@@ -48,7 +50,12 @@ async def process_article(
             status = ProcessingStatus.PARSING_ERROR.value
         else:
             try:
-                article_words = split_by_words(morph, sanitized_text)
+                start = time.monotonic()
+                article_words = await split_by_words(morph, sanitized_text)
+                end = time.monotonic()
+                if end - start > MIN_RUNTIME_SEC:
+                    raise TimeoutError
+                logging.info(f"Анализ закончен за {end - start} сек")
             except TimeoutError:
                 status = ProcessingStatus.TIMEOUT.value
             else:
