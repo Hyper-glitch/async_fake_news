@@ -3,19 +3,22 @@ import string
 import aiofiles
 
 
-def _clean_word(word):
+async def _clean_word(word):
     word = word.replace("«", "").replace("»", "").replace("…", "")
     # FIXME какие еще знаки пунктуации часто встречаются ?
     word = word.strip(string.punctuation)
     return word
 
 
-async def split_by_words(morph, word):
+async def split_by_words(morph, text):
     """Учитывает знаки пунктуации, регистр и словоформы, выкидывает предлоги."""
-    cleaned_word = _clean_word(word)
-    normalized_word = morph.parse(cleaned_word)[0].normal_form
-    if len(normalized_word) > 2 or normalized_word == "не":
-        yield word
+    words = []
+    for word in text.split():
+        cleaned_word = await _clean_word(word)
+        normalized_word = morph.parse(cleaned_word)[0].normal_form
+        if len(normalized_word) > 2 or normalized_word == "не":
+            words.append(normalized_word)
+    return words
 
 def calculate_jaundice_rate(article_words, charged_words):
     """Расчитывает желтушность текста, принимает список "заряженных" слов и ищет их внутри article_words."""

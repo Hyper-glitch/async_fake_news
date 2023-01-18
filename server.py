@@ -50,20 +50,15 @@ async def process_article(
             status = ProcessingStatus.PARSING_ERROR.value
         else:
             try:
-                words = []
                 start = time.monotonic()
-                for word in sanitized_text.split():
-                    article_word = await split_by_words(morph=morph, word=word)
-                    words.append(article_word)
+                article_words = await split_by_words(morph, sanitized_text)
                 end = time.monotonic()
-                if end - start > MIN_RUNTIME_SEC:
-                    raise TimeoutError
                 logging.info(f"Анализ закончен за {end - start} сек")
             except TimeoutError:
                 status = ProcessingStatus.TIMEOUT.value
             else:
-                words_count = len(words)
-                score = calculate_jaundice_rate(words, charged_words)
+                words_count = len(article_words)
+                score = calculate_jaundice_rate(article_words, charged_words)
                 status = ProcessingStatus.OK.value
 
     analyzed_results.append(
