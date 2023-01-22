@@ -1,3 +1,4 @@
+import asyncio
 import string
 
 import aiofiles
@@ -15,9 +16,11 @@ async def split_by_words(morph, text):
     words = []
     for word in text.split():
         cleaned_word = await _clean_word(word)
+        await asyncio.sleep(0)
         normalized_word = morph.parse(cleaned_word)[0].normal_form
         if len(normalized_word) > 2 or normalized_word == "не":
             words.append(normalized_word)
+
     return words
 
 def calculate_jaundice_rate(article_words, charged_words):
